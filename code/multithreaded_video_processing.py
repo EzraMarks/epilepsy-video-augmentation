@@ -109,7 +109,7 @@ class WritingThread(Thread):
             print(self.output_queue.qsize())
             frame = self.output_queue.get()
             cv2.imshow('frame', frame)
-            cv2.waitKey(30)
+            cv2.waitKey(33)
         
         cv2.destroyAllWindows()
 
