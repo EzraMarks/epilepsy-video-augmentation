@@ -68,8 +68,7 @@ def detect_flashes(frames):
     # luminance change from one frame to the next
     lumen_changes = np.zeros((resolution, resolution, num_frames - 1), dtype=np.int32)
 
-    # fill array of luminance_changes
-    # TODO not currently accounting for the final 1 frame in the buffer
+    # fill array of luminance changes
     for idx in range(num_frames - 1):
         f_curr = frames[:, :, :, idx].astype(np.int16)
         f_next = frames[:, :, :, idx + 1].astype(np.int16)
