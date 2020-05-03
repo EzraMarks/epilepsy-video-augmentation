@@ -64,8 +64,7 @@ class ProcessingThread():
             flash = detect_flashes(frames)
             # if a flash is detected, call extremely cursed function
             if flash:
-                frames = contrast_drop(frames)
-                # frames = normalize_brightness(frames)
+                frames = blend(frames)
                 total = total + 1
                 if detect_flashes(frames):
                     total_after = total_after + 1
@@ -155,22 +154,41 @@ def contrast_drop(frames):
         frames[:,:,:,i] = cv2.convertScaleAbs(frames[:,:,:,i], alpha=0.2, beta=100.0)
     return frames
 
+def normalize_luminance(frames):
+    num_frames = frames.shape[3]
+    for i in range(0, num_frames):
+        img = frames[:,:,:,i]
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2YUV);
+        channels = cv2.split(img);
+        channels[0] = cv2.equalizeHist(channels[0]);
+        img = cv2.merge(channels);
+        img = cv2.cvtColor(img, cv2.COLOR_YUV2RGB);
+    return frames
+
 class WritingThread():
-    def __init__(self, output_queue, original_queue, waitFor):
+    def __init__(self, output_queue, original_queue):
         self.name = "Writing Thread"
         self.output_queue = output_queue
         self.original_queue = original_queue
-        self.waitFor = waitFor
         self.run()
 
     def run(self):
+        print(frame_w)
+        print(frame_h)
+        out = cv2.VideoWriter()
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        if not out.open('outpy.mp4',fourcc, video.get(cv2.CAP_PROP_FPS), (2*frame_w,frame_h)):
+            print("ruh rih")
+        # out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), video.get(cv2.CAP_PROP_FPS), (frame_w*2,frame_h))
         while self.original_queue.qsize() > 0: # TODO close window when video is over
             # read frames from queue
             frame = self.output_queue.get()
             oframe = self.original_queue.get()
-            cv2.imshow('frame', np.concatenate((oframe,frame),axis=1))
-            cv2.waitKey(self.waitFor)
-
+            disp = np.concatenate((oframe,frame),axis=1)
+            out.write(disp)
+            cv2.imshow('frame', disp)
+            cv2.waitKey(waitFor)
+        out.release()
         cv2.destroyAllWindows()
 
 def detect_flashes(frames):
@@ -228,6 +246,6 @@ frame_h = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 # create instances of each thread
 reading_thread = ReadingThread(input_queue, video, original_queue)
 processing_thread = ProcessingThread(input_queue, output_queue, frame_w, frame_h)
-writing_thread = WritingThread(output_queue, original_queue, waitFor)
+writing_thread = WritingThread(output_queue, original_queue)
 
 print('Main Terminating...')
