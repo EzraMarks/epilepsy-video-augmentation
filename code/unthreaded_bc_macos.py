@@ -64,7 +64,7 @@ class ProcessingThread():
             flash = detect_flashes(frames)
             # if a flash is detected, call extremely cursed function
             if flash:
-                frames = blazy_boi(frames)
+                frames = contrast_drop(frames)
                 # frames = normalize_brightness(frames)
                 total = total + 1
                 if detect_flashes(frames):
@@ -72,6 +72,11 @@ class ProcessingThread():
             for i in range(num_frames - overlap):
                 frame = np.copy(frames[:, :, :, i])
                 self.output_queue.put(frame)
+                ## this implementation attempts to slow down the video
+                ## every time there are detected flashes. works, but it
+                ## is pretty annoying since it slows everything down.
+                # if flash:
+                #     self.output_queue.put(frame)
 
         while not self.input_queue.empty():
             bar.next()
@@ -80,16 +85,31 @@ class ProcessingThread():
         bar.finish()
         print((total_after / total) * 100)
 
-
+# "absolute most lazy implementation"
+# • This function replaces the first half of the frames with the first frame
+# and the second half of the frames with the last frame.
+# • It works pretty well on hand animation like pokemon shock, but it looks
+# super jank on the seven nation army video since it
 def lazy_stuff(frames):
     num_frames = frames.shape[3]
     over_two = int(num_frames / 2)
-    for i in range(0, num_frames):
-        frames[:, :, :, i] = frames[:, :, :, i - (i % over_two)]
-    # for i in range(over_two, num_frames):
-        # frames[:, :, :, i] = frames[:, :, :, i + num_frames - 1 - (i % num_frames)]
+    # replace all the frames in the first half with the first frame
+    for i in range(0, over_two):
+        frames[:, :, :, i] = frames[:, :, :, 0]
+    # replace all the frames in the second half with the last frame
+    for i in range(over_two, num_frames):
+        frames[:, :, :, i] = frames[:, :, :, num_frames - 1]
     return frames
 
+# "the powerpoint transition"
+# • This function takes the first frame and the last frame and progressively
+# fades from the first one to the last one in num_frames steps, replacing
+# the flashy frames with the fade.
+# • Basically, it's the powerpoint transition we all know and love from
+# middle school teachers that got too excited trying to make their
+# presentations fun.
+# • Looks okay on animation like pokemon shock, looks janky on seven nation
+# army but slightly better than lazy_stuff.
 def blend(frames):
     num_frames = frames.shape[3]
     inc = 1 / (num_frames - 2)
@@ -101,6 +121,9 @@ def blend(frames):
         alpha = 1.0 - beta
     return frames
 
+# "what if..."
+# • this literally just combines blend and lazy_stuff (making it blazy boi)
+# • I think blend looks better, it just becomes a bit too flashy still
 def blazy_boi(frames):
     num_frames = frames.shape[3]
     over_two = int(num_frames / 2)
@@ -122,6 +145,16 @@ def blazy_boi(frames):
         alpha = 1.0 - beta
     return frames
 
+# "trying legit methods"
+# • drops the contrast of the video and bumps brightness to offset
+# • definitely gets rid of a lot of flashing I think but it looks very obviously
+# altered, as it just gets really grey
+def contrast_drop(frames):
+    num_frames = frames.shape[3]
+    for i in range(0, num_frames):
+        frames[:,:,:,i] = cv2.convertScaleAbs(frames[:,:,:,i], alpha=0.2, beta=100.0)
+    return frames
+
 class WritingThread():
     def __init__(self, output_queue, original_queue, waitFor):
         self.name = "Writing Thread"
@@ -135,9 +168,7 @@ class WritingThread():
             # read frames from queue
             frame = self.output_queue.get()
             oframe = self.original_queue.get()
-            cv2.imshow('frame', frame)
-            cv2.waitKey(self.waitFor)
-            cv2.imshow('original frame', oframe)
+            cv2.imshow('frame', np.concatenate((oframe,frame),axis=1))
             cv2.waitKey(self.waitFor)
 
         cv2.destroyAllWindows()
@@ -179,66 +210,6 @@ def detect_flashes(frames):
 
     return flash
 
-def normalize_brightness(frames):
-    # some random arbitrary threshold I set
-    threshold = 50
-    num_frames = frames.shape[3]
-    # not copying the frames modifies all of them idk why
-    frames_cpy = np.copy(frames)
-
-    # calculate sum total value of all frames (in hsv, value corresponds to brightness SUPPOSEDLY)
-    # in the real world this feels like a lie
-    value_sum = np.zeros((frames.shape[0], frames.shape[1]))
-    for i in range(num_frames):
-        # display each original frame (without modification) for ease
-        # cv2.imshow('orig_frame', frames[:, :, :, i])
-        # cv2.waitKey(5)
-        # convert to HSV space to extract values
-        hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
-        value = hsv_frame[:, :, 2]
-        # add value to running sum (avg later)
-        value_sum += value
-
-    # average over entire images (could be use to normalize, ie subtract out)
-    # rgb_sum = np.zeros((frames.shape[0], frames.shape[1], frames.shape[2]))
-    # for i in range(num_frames):
-    #     rgb_sum += frames[:, :, :, i]
-    # rgb_avg = rgb_sum/num_frames
-
-    # just take the average of like every single pixel
-    # sum_avg = np.sum(rgb_avg)
-    # total_avg = sum_avg/(frames.shape[0] * frames.shape[1])
-
-    # average brightness across all images as a single value
-    avg_value = np.sum(value_sum/num_frames)/(frames.shape[0]*frames.shape[1])
-    # try just making the brightness of every image the same (current attempt)
-    brightness = np.full((frames.shape[0], frames.shape[1]), avg_value)
-
-    for j in range(num_frames):
-        # get each frame
-        rgb_frame = frames[:, :, :, j]
-        # convert from RGB to HSV space to fuck with value (brightness???)
-        hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
-        # set brightness of every pixel to same value (starting to think this *isn't* brightness)
-        hsv_frame[:, :, 2] = brightness
-
-        # threshold based on average pixel value in order to make outliers less harsh (this didn't look *horrible*)
-        # (just very bad) -> also tried thresholding brightness and that was worse
-        # rgb_frame_hthresh = rgb_frame > total_avg + threshold
-        # rgb_frame_lthresh = rgb_frame < total_avg - threshold
-        # rgb_frame[rgb_frame_hthresh] = rgb_frame[rgb_frame_hthresh] - threshold
-        # rgb_frame[rgb_frame_lthresh] = rgb_frame[rgb_frame_lthresh] + threshold
-
-        # convert frame back to RGB
-        rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2RGB)
-        # display frame so as to better see my pain
-        # cv2.imshow('new_frame', rgb_frame)
-        # cv2.waitKey(5)
-        # modify frame in copied array
-        frames_cpy[:, :, :, j] = rgb_frame
-    return frames_cpy
-
-
 # FIFO (first-in-first-out) queue to hold frames after reading them in
 input_queue = Queue()
 # FIFO queue to hold frames after processing, before writing/displaying them out
@@ -247,10 +218,10 @@ output_queue = Queue()
 original_queue = Queue()
 
 # create video reader
-video = cv2.VideoCapture("video.mp4")
+video = cv2.VideoCapture("shock.mp4")
 if not video.isOpened():
     print("Error Opening Video File")
-waitFor = int(400.0 / video.get(cv2.CAP_PROP_FPS))
+waitFor = int(1000.0 / video.get(cv2.CAP_PROP_FPS))
 frame_w  = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_h = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
