@@ -20,7 +20,7 @@ class ReadingThread():
         self.run()
 
     def run(self):
-        bar = ProgressBar("Reading", max=312)
+        bar = ProgressBar("Reading", max=video.get(cv2.CAP_PROP_FRAME_COUNT))
         go = self.video.isOpened()
         while (go):
             # load frames into queue
@@ -43,7 +43,7 @@ class ProcessingThread():
         self.run()
 
     def run(self):
-        bar = ProgressBar("Processing", max=311)
+        bar = ProgressBar("Processing", max=input_queue.qsize())
         num_frames = 12
         overlap = 2
         frames = np.zeros((frame_h, frame_w, 3, num_frames), dtype=np.uint8)
@@ -247,7 +247,7 @@ output_queue = Queue()
 original_queue = Queue()
 
 # create video reader
-video = cv2.VideoCapture("shock.mp4")
+video = cv2.VideoCapture("video.mp4")
 if not video.isOpened():
     print("Error Opening Video File")
 waitFor = int(400.0 / video.get(cv2.CAP_PROP_FPS))
@@ -258,13 +258,5 @@ frame_h = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 reading_thread = ReadingThread(input_queue, video, original_queue)
 processing_thread = ProcessingThread(input_queue, output_queue, frame_w, frame_h)
 writing_thread = WritingThread(output_queue, original_queue, waitFor)
-# start running all threads
-# reading_thread.start()
-# processing_thread.start()
-# writing_thread.start()
 
-# after all threads are finished
-# reading_thread.join()
-# processing_thread.join()
-# writing_thread.join()
 print('Main Terminating...')
