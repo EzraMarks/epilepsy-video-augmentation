@@ -90,8 +90,6 @@ def normalize_brightness(frames):
     num_frames = frames.shape[3]
     # not copying the frames modifies all of them idk why
     frames_cpy = np.copy(frames)
-    cv2.imshow('orig_frame', frames[:, :, :, 5])
-    cv2.waitKey(5000)
     # calculate sum total value of all frames (in hsv, value corresponds to brightness SUPPOSEDLY)
     # in the real world this feels like a lie
     value_sum = np.zeros((frames.shape[0], frames.shape[1]))
@@ -138,23 +136,18 @@ def normalize_brightness(frames):
         # convert frame back to RGB
         rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2RGB)
         # display frame so as to better see my pain
-        # cv2.imshow('new_frame', rgb_frame)
-        # cv2.waitKey(5)
+
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
-    # cv2.imshow('copied_frame', frames_cpy[:, :, :, 5])
-    # cv2.waitKey(5000)
+
     return frames_cpy
 
 
-<< << << < HEAD: code/unthreaded_bc_macos.py
 # "absolute most lazy implementation"
 # • This function replaces the first half of the frames with the first frame
 # and the second half of the frames with the last frame.
 # • It works pretty well on hand animation like pokemon shock, but it looks
 # super jank on the seven nation army video since it
-
-
 def lazy_stuff(frames):
     num_frames = frames.shape[3]
     over_two = int(num_frames / 2)
@@ -187,12 +180,6 @@ def blend(frames):
             frames[:, :, :, 0], alpha, frames[:, :, :, num_frames - 1], beta, 0.0)
         beta = beta + inc
         alpha = 1.0 - beta
-    # cv2.imshow('frame1', frames[:,:,:,0])
-    # cv2.waitKey(5000)
-    # cv2.imshow('frame2', frames[:,:,:,5])
-    # cv2.waitKey(5000)
-    # cv2.imshow('frame3', frames[:,:,:,11])
-    # cv2.waitKey(5000)
     return frames
 
 # "what if..."
@@ -279,10 +266,6 @@ def normalize_luminance(frames):
     return frames
 
 
-== == == =
->>>>>> > 1129ecc4714521de6017ad2b007b54dd062afb20: code/non_realtime_processing.py
-
-
 class WritingThread():
     def __init__(self, output_queue, original_queue):
         self.name = "Writing Thread"
@@ -291,26 +274,16 @@ class WritingThread():
         self.run()
 
     def run(self):
-        print(frame_w)
-        print(frame_h)
-        # out = cv2.VideoWriter()
-        # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        # if not out.open('outpy.mp4',fourcc, video.get(cv2.CAP_PROP_FPS), (2*frame_w,frame_h)):
-        #     print("ruh rih")
-        # out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), video.get(cv2.CAP_PROP_FPS), (frame_w*2,frame_h))
-
-        # cv2.imshow('frame', np.zeros((frame_h, frame_w*2, 3), dtype=np.uint8))
-        # cv2.waitKey(10000)
-
-        while self.original_queue.qsize() > 0:  # TODO close window when video is over
-            # read frames from queue
+        while self.original_queue.qsize() > 0:
+            # read altered frame from queue
             frame = self.output_queue.get()
+            # read original frame from queue
             oframe = self.original_queue.get()
+            # concatenate them together with the original frame on the left and
+            # altered frame on the right
             disp = np.concatenate((oframe, frame), axis=1)
-            # out.write(disp)
             cv2.imshow('frame', disp)
             cv2.waitKey(waitFor)
-        # out.release()
         cv2.destroyAllWindows()
 
 
@@ -360,13 +333,9 @@ output_queue = Queue()
 
 original_queue = Queue()
 
-obscure = "average_brightness"
-
 # create video reader
-# video = cv2.VideoCapture("sherlock.mp4")
-# video = cv2.VideoCapture("../results/shock_" + obscure + "_solo.mp4")
-
 video = cv2.VideoCapture("../source-footage/shock.mp4")
+
 if not video.isOpened():
     print("Error Opening Video File")
 waitFor = int(1000.0 / video.get(cv2.CAP_PROP_FPS))
