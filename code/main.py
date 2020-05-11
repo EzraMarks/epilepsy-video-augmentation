@@ -17,11 +17,11 @@ def parse_args():
         help='''Path to the video file for processing.''')
     parser.add_argument(
         '--augmentation',
-        default='blend',
-        choices=['blend', 'contrast_drop', 'black_out', 'normalize_luminance',
-            'lazy_stuff', 'blazy_boi', 'blazy_contrast', 'average_brightness',
-            'threshold_brightness', 'normalize_brightness', 'normalize_pixels',
-            'average_lab', 'replace_value', 'replace_luminance'],
+        default='blend_and_cut',
+        choices=['hard_cut', 'blend', 'blend_and_cut', 'contrast_drop',
+        'black_out', 'normalize_luminance', 'blend_cut_contrast', 'average_brightness',
+        'threshold_brightness', 'normalize_brightness', 'normalize_pixels',
+        'average_lab', 'replace_value', 'replace_luminance'],
         help='''Which type of video augmentation to use for flash reduction.''')
     parser.add_argument(
         '--preprocess',

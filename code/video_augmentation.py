@@ -145,9 +145,6 @@ def average_brightness(frames):
 
         # convert frame back to RGB
         rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2RGB)
-        # display frame so as to better see my pain
-        cv2.imshow('new_frame', rgb_frame)
-        cv2.waitKey(5)
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy
@@ -181,9 +178,6 @@ def threshold_brightness(frames):
         rgb_frame[rgb_frame_hthresh] = rgb_frame[rgb_frame_hthresh] - threshold
         rgb_frame[rgb_frame_lthresh] = rgb_frame[rgb_frame_lthresh] + threshold
 
-        # display frame so as to better see my pain
-        cv2.imshow('new_frame', rgb_frame)
-        cv2.waitKey(5)
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy
@@ -213,9 +207,6 @@ def normalize_brightness(frames):
 
         # convert frame back to RGB
         rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2RGB)
-        # display frame so as to better see my pain
-        cv2.imshow('new_frame', rgb_frame)
-        cv2.waitKey(5)
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy
@@ -235,9 +226,6 @@ def normalize_pixels(frames):
     for j in range(num_frames):
         # get each frame
         rgb_frame = frames[:, :, :, j] - rgb_avg
-        # display frame so as to better see my pain
-        cv2.imshow('new_frame', rgb_frame)
-        cv2.waitKey(5)
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy
@@ -273,9 +261,6 @@ def average_lab(frames):
 
         # convert frame back to RGB
         rgb_frame = cv2.cvtColor(lab_frame, cv2.COLOR_LAB2RGB)
-        # display frame so as to better see my pain
-        cv2.imshow('new_frame', rgb_frame)
-        cv2.waitKey(5)
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy
@@ -309,8 +294,6 @@ def replace_value(frames):
         # convert frame back to RGB
         rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2RGB)
         # display frame so as to better see my pain
-        cv2.imshow('new_frame', rgb_frame)
-        cv2.waitKey(5)
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy
@@ -343,9 +326,6 @@ def replace_luminance(frames):
 
         # convert frame back to RGB
         rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_LAB2RGB)
-        # display frame so as to better see my pain
-        cv2.imshow('new_frame', rgb_frame)
-        cv2.waitKey(5)
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy

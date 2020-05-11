@@ -67,6 +67,9 @@ class WritingThread(Thread):
     def run(self):
         fps = self.video.get(cv2.CAP_PROP_FPS)
         while ((self.video.isOpened()) or (self.output_queue.qsize() > 0)):
+            # buffer, if running too slowly
+            if (self.output_queue.qsize() == 0):
+                cv2.waitKey(2000)
             # read frames from queue
             frame = self.output_queue.get()
             cv2.imshow('frame', frame)
