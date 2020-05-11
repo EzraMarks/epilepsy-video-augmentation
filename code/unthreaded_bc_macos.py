@@ -82,7 +82,71 @@ class ProcessingThread():
             self.output_queue.put(self.input_queue.get())
 
         bar.finish()
-        print((total_after / total) * 100)
+        if total > 0:
+            print((total_after / total) * 100)
+        print(total)
+
+def normalize_brightness(frames):
+    # some random arbitrary threshold I set
+    threshold = 50
+    num_frames = frames.shape[3]
+    # not copying the frames modifies all of them idk why
+    frames_cpy = np.copy(frames)
+    cv2.imshow('orig_frame', frames[:, :, :, 5])
+    cv2.waitKey(5000)
+    # calculate sum total value of all frames (in hsv, value corresponds to brightness SUPPOSEDLY)
+    # in the real world this feels like a lie
+    value_sum = np.zeros((frames.shape[0], frames.shape[1]))
+    for i in range(num_frames):
+        # display each original frame (without modification) for ease
+        # cv2.imshow('orig_frame', frames[:, :, :, i])
+        # cv2.waitKey(5)
+        # convert to HSV space to extract values
+        hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
+        value = hsv_frame[:, :, 2]
+        # add value to running sum (avg later)
+        value_sum += value
+
+    # average over entire images (could be use to normalize, ie subtract out)
+    # rgb_sum = np.zeros((frames.shape[0], frames.shape[1], frames.shape[2]))
+    # for i in range(num_frames):
+    #     rgb_sum += frames[:, :, :, i]
+    # rgb_avg = rgb_sum/num_frames
+
+    # just take the average of like every single pixel
+    # sum_avg = np.sum(rgb_avg)
+    # total_avg = sum_avg/(frames.shape[0] * frames.shape[1])
+
+    # average brightness across all images as a single value
+    avg_value = np.sum(value_sum/num_frames)/(frames.shape[0]*frames.shape[1])
+    # try just making the brightness of every image the same (current attempt)
+    brightness = np.full((frames.shape[0], frames.shape[1]), avg_value)
+
+    for j in range(num_frames):
+        # get each frame
+        rgb_frame = frames[:, :, :, j]
+        # convert from RGB to HSV space to fuck with value (brightness???)
+        hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
+        # set brightness of every pixel to same value (starting to think this *isn't* brightness)
+        hsv_frame[:, :, 2] = brightness
+
+        # threshold based on average pixel value in order to make outliers less harsh (this didn't look *horrible*)
+        # (just very bad) -> also tried thresholding brightness and that was worse
+        # rgb_frame_hthresh = rgb_frame > total_avg + threshold
+        # rgb_frame_lthresh = rgb_frame < total_avg - threshold
+        # rgb_frame[rgb_frame_hthresh] = rgb_frame[rgb_frame_hthresh] - threshold
+        # rgb_frame[rgb_frame_lthresh] = rgb_frame[rgb_frame_lthresh] + threshold
+
+        # convert frame back to RGB
+        rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2RGB)
+        # display frame so as to better see my pain
+        # cv2.imshow('new_frame', rgb_frame)
+        # cv2.waitKey(5)
+        # modify frame in copied array
+        frames_cpy[:, :, :, j] = rgb_frame
+    # cv2.imshow('copied_frame', frames_cpy[:, :, :, 5])
+    # cv2.waitKey(5000)
+    return frames_cpy
 
 # "absolute most lazy implementation"
 # • This function replaces the first half of the frames with the first frame
@@ -118,6 +182,12 @@ def blend(frames):
         frames[:, :, :, i] = cv2.addWeighted(frames[:, :, :, 0], alpha, frames[:, :, :, num_frames - 1], beta, 0.0)
         beta = beta + inc
         alpha = 1.0 - beta
+    # cv2.imshow('frame1', frames[:,:,:,0])
+    # cv2.waitKey(5000)
+    # cv2.imshow('frame2', frames[:,:,:,5])
+    # cv2.waitKey(5000)
+    # cv2.imshow('frame3', frames[:,:,:,11])
+    # cv2.waitKey(5000)
     return frames
 
 # "what if..."
@@ -150,9 +220,39 @@ def blazy_boi(frames):
 # altered, as it just gets really grey
 def contrast_drop(frames):
     num_frames = frames.shape[3]
+    # cv2.imshow('frame2', frames[:,:,:,11])
+    # cv2.waitKey(5000)
     for i in range(0, num_frames):
         frames[:,:,:,i] = cv2.convertScaleAbs(frames[:,:,:,i], alpha=0.2, beta=100.0)
+    # cv2.imshow('frame3', frames[:,:,:,11])
+    # cv2.waitKey(5000)
     return frames
+
+
+def blazy_contrast(frames):
+    num_frames = frames.shape[3]
+    over_two = int(num_frames / 2)
+    begin = frames[:, :, :, 0]
+    middle = cv2.convertScaleAbs(frames[:,:,:,over_two - 1], alpha=0.2, beta=100.0)
+    end = frames[:, :, :, num_frames - 1]
+    inc = 1 / num_frames
+    alpha = (over_two - 1) * inc
+    beta = 1.0 - alpha
+    for i in range(1, over_two - 1):
+        frames[:, :, :, i] = cv2.addWeighted(begin, alpha, middle, beta, 0.0)
+        alpha = alpha - inc
+        beta = 1.0 - alpha
+    alpha = (num_frames + 1 - over_two) * inc
+    beta = 1.0 - alpha
+    for i in range(over_two, num_frames):
+        frames[:, :, :, i] = cv2.addWeighted(middle, alpha, end, beta, 0.0)
+        alpha = alpha - inc
+        beta = 1.0 - alpha
+    frames[:,:,:,over_two - 1] = middle
+    return frames
+
+def black_out(frames):
+    return np.zeros((frame_h, frame_w, 3, frames.shape[3]), dtype=np.uint8)
 
 def normalize_luminance(frames):
     num_frames = frames.shape[3]
@@ -175,20 +275,24 @@ class WritingThread():
     def run(self):
         print(frame_w)
         print(frame_h)
-        out = cv2.VideoWriter()
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        if not out.open('outpy.mp4',fourcc, video.get(cv2.CAP_PROP_FPS), (2*frame_w,frame_h)):
-            print("ruh rih")
+        # out = cv2.VideoWriter()
+        # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        # if not out.open('outpy.mp4',fourcc, video.get(cv2.CAP_PROP_FPS), (2*frame_w,frame_h)):
+        #     print("ruh rih")
         # out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), video.get(cv2.CAP_PROP_FPS), (frame_w*2,frame_h))
+
+        # cv2.imshow('frame', np.zeros((frame_h, frame_w*2, 3), dtype=np.uint8))
+        # cv2.waitKey(10000)
+
         while self.original_queue.qsize() > 0: # TODO close window when video is over
             # read frames from queue
             frame = self.output_queue.get()
             oframe = self.original_queue.get()
             disp = np.concatenate((oframe,frame),axis=1)
-            out.write(disp)
+            # out.write(disp)
             cv2.imshow('frame', disp)
             cv2.waitKey(waitFor)
-        out.release()
+        # out.release()
         cv2.destroyAllWindows()
 
 def detect_flashes(frames):
@@ -235,8 +339,12 @@ output_queue = Queue()
 
 original_queue = Queue()
 
+obscure = "average_brightness"
+
 # create video reader
-video = cv2.VideoCapture("shock.mp4")
+video = cv2.VideoCapture("sherlock.mp4")
+# video = cv2.VideoCapture("../results/shock_" + obscure + "_solo.mp4")
+
 if not video.isOpened():
     print("Error Opening Video File")
 waitFor = int(1000.0 / video.get(cv2.CAP_PROP_FPS))
