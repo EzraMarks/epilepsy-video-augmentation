@@ -4,8 +4,8 @@ from queue import Queue
 from threading import Thread
 from progress.bar import IncrementalBar
 
+from flash_detection import detect_flashes
 exec(open("./video_augmentation.py").read())
-exec(open("./flash_detection.py").read())
 
 
 class ProgressBar(IncrementalBar):
@@ -72,11 +72,6 @@ class ProcessingThread():
             for i in range(num_frames - overlap):
                 frame = np.copy(frames[:, :, :, i])
                 self.output_queue.put(frame)
-                ## this implementation attempts to slow down the video
-                ## every time there are detected flashes. works, but it
-                ## is pretty annoying since it slows everything down.
-                # if flash:
-                #     self.output_queue.put(frame)
 
         while not self.input_queue.empty():
             bar.next()
@@ -84,7 +79,6 @@ class ProcessingThread():
 
         bar.finish()
         print((total_after / total) * 100)
-
 
 
 class WritingThread():

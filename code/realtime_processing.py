@@ -3,8 +3,8 @@ import numpy as np
 from queue import Queue
 from threading import Thread
 
+from flash_detection import detect_flashes
 exec(open("./video_augmentation.py").read())
-exec(open("./flash_detection.py").read())
 
 
 class ReadingThread(Thread):
@@ -54,7 +54,7 @@ class ProcessingThread(Thread):
                 flash = detect_flashes(frames)
 
                 if flash:    
-                    frames = contrast_drop(frames) # TODO select video augmentation
+                    frames = blend(frames) # TODO select video augmentation
                 for i in range(num_frames - overlap):
                     frame = np.copy(frames[:, :, :, i])
                     self.output_queue.put(frame)
