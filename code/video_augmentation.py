@@ -40,17 +40,6 @@ def blend(frames):
         beta = beta + inc
         alpha = 1.0 - beta
     return frames
-def old_blend(frames):
-    num_frames = frames.shape[3]
-    inc = 1 / (num_frames - 2)
-    beta = inc
-    alpha = (1.0 - beta)
-    for i in range(1, num_frames - 1):
-        frames[:, :, :, i] = cv2.addWeighted(
-            frames[:, :, :, 0], alpha, frames[:, :, :, num_frames - 1], beta, 0.0)
-        beta = beta + inc
-        alpha = 1.0 - beta
-    return frames
 
 
 # "what if..."
