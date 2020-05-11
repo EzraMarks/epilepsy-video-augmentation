@@ -198,7 +198,7 @@ def normalize_brightness(frames):
         value_sum += value
 
     # compute average value
-    value_sum = value_sum/num_frmaes
+    value_sum = value_sum/num_frames
 
     for j in range(num_frames):
         # get each frame
