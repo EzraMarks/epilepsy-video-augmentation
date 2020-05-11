@@ -79,17 +79,17 @@ def contrast_drop(frames):
     return frames
 
 def black_out(frames):
-    return np.zeros((frame_h, frame_w, 3, frames.shape[3]), dtype=np.uint8)
+    return np.zeros((frames.shape[0], frames.shape[1], 3, frames.shape[3]), dtype=np.uint8)
 
 def normalize_luminance(frames):
     num_frames = frames.shape[3]
     for i in range(0, num_frames):
         img = frames[:,:,:,i]
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2YUV);
-        channels = cv2.split(img);
-        channels[0] = cv2.equalizeHist(channels[0]);
-        img = cv2.merge(channels);
-        img = cv2.cvtColor(img, cv2.COLOR_YUV2RGB);
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+        channels = cv2.split(img)
+        channels[0] = cv2.equalizeHist(channels[0])
+        img = cv2.merge(channels)
+        img = cv2.cvtColor(img, cv2.COLOR_YUV2RGB)
     return frames
 
 def blazy_contrast(frames):
