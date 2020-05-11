@@ -96,13 +96,9 @@ class WritingThread():
 
     def run(self):
         while self.original_queue.qsize() > 0:
-            # read altered frame from queue
+            # read frames from queue
             frame = self.output_queue.get()
-            # read original frame from queue
-            oframe = self.original_queue.get()
-            # concatenate them together with the original frame on the left and
-            # altered frame on the right
-            disp = np.concatenate((oframe, frame), axis=1)
-            cv2.imshow('frame', disp)
-            cv2.waitKey(int(1000 / self.fps))
+            cv2.imshow('frame', frame)
+            cv2.waitKey(int(1000 / fps))
+
         cv2.destroyAllWindows()

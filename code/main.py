@@ -5,8 +5,7 @@ from queue import Queue
 from threading import Thread
 import realtime_processing as realtime
 import non_realtime_processing as non_realtime
-
-exec(open("./video_augmentation.py").read())
+import video_augmentation as augment
 
 # perform command-line argument parsing
 def parse_args():
@@ -41,7 +40,7 @@ def main():
         print("Error Opening Video File")
     fps = video.get(cv2.CAP_PROP_FPS)
 
-    augmentation_func = globals()[ARGS.augmentation]
+    augmentation_func = getattr(augment, ARGS.augmentation)
 
     if (ARGS.preprocess):
         # create queue to store unaltered video for side-by-side comparison
