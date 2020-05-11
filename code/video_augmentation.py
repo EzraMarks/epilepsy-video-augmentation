@@ -8,7 +8,7 @@ from skimage.color import rgb2hsv
 # and the second half of the frames with the last frame.
 # • It works pretty well on hand animation like pokemon shock, but it looks
 # super jank on the seven nation army video since it
-def lazy_stuff(frames):
+def hard_cut(frames):
     num_frames = frames.shape[3]
     over_two = int(num_frames / 2)
     # replace all the frames in the first half with the first frame
@@ -28,8 +28,19 @@ def lazy_stuff(frames):
 # middle school teachers that got too excited trying to make their
 # presentations fun.
 # • Looks okay on animation like pokemon shock, looks janky on seven nation
-# army but slightly better than lazy_stuff.
+# army but slightly better than hard_cut.
 def blend(frames):
+    num_frames = frames.shape[3]
+    inc = 1 / num_frames
+    beta = inc
+    alpha = (1.0 - beta)
+    for i in range(1, num_frames - 1):
+        frames[:, :, :, i] = cv2.addWeighted(
+            frames[:, :, :, 0], alpha, frames[:, :, :, num_frames - 1], beta, 0.0)
+        beta = beta + inc
+        alpha = 1.0 - beta
+    return frames
+def old_blend(frames):
     num_frames = frames.shape[3]
     inc = 1 / (num_frames - 2)
     beta = inc
@@ -43,15 +54,15 @@ def blend(frames):
 
 
 # "what if..."
-# • this literally just combines blend and lazy_stuff (making it blazy boi)
+# • this literally just combines blend and hard_cut
 # • I think blend looks better, it just becomes a bit too flashy still
-def blazy_boi(frames):
+def blend_and_cut(frames):
     num_frames = frames.shape[3]
     over_two = int(num_frames / 2)
     begin = frames[:, :, :, 0]
     middle = frames[:, :, :, over_two - 1]
     end = frames[:, :, :, num_frames - 1]
-    inc = 1 / (over_two - 2)
+    inc = 1 / over_two
     beta = inc
     alpha = (1.0 - beta)
     for i in range(1, over_two - 1):
@@ -92,7 +103,7 @@ def normalize_luminance(frames):
         img = cv2.cvtColor(img, cv2.COLOR_YUV2RGB);
     return frames
 
-def blazy_contrast(frames):
+def blend_cut_contrast(frames):
     num_frames = frames.shape[3]
     over_two = int(num_frames / 2)
     begin = frames[:, :, :, 0]
@@ -272,7 +283,7 @@ def average_lab(frames):
         lab_frame[:, :, 0] = brightness
 
         # convert frame back to RGB
-        rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_LAB2RGB)
+        rgb_frame = cv2.cvtColor(lab_frame, cv2.COLOR_LAB2RGB)
         # display frame so as to better see my pain
         cv2.imshow('new_frame', rgb_frame)
         cv2.waitKey(5)
