@@ -7,9 +7,8 @@ from progress.bar import IncrementalBar
 from flash_detection import detect_flashes
 exec(open("./video_augmentation.py").read())
 
-
 class ProgressBar(IncrementalBar):
-    suffix= "%(percent)d%% [%(elapsed_td)s / %(eta_td)s]"
+    suffix = "%(percent)d%% [%(elapsed_td)s / %(eta_td)s]"
 
 
 class ReadingThread():
@@ -60,7 +59,8 @@ class ProcessingThread():
             for i in range(overlap):
                 # keep these frames in the input queue for reuse (overlap)
                 # when processing the next segment of the video
-                frames[:, :, :, num_frames - overlap + i] = self.input_queue.queue[i]
+                frames[:, :, :, num_frames - overlap +
+                       i] = self.input_queue.queue[i]
 
             flash = detect_flashes(frames)
             # if a flash is detected, call extremely cursed function
@@ -78,7 +78,9 @@ class ProcessingThread():
             self.output_queue.put(self.input_queue.get())
 
         bar.finish()
-        print((total_after / total) * 100)
+        if total > 0:
+            print((total_after / total) * 100)
+        print(total)
 
 
 class WritingThread():
@@ -89,23 +91,18 @@ class WritingThread():
         self.run()
 
     def run(self):
-        print(frame_w)
-        print(frame_h)
-        out = cv2.VideoWriter()
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        if not out.open('outpy.mp4',fourcc, video.get(cv2.CAP_PROP_FPS), (2*frame_w,frame_h)):
-            print("ruh rih")
-        # out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), video.get(cv2.CAP_PROP_FPS), (frame_w*2,frame_h))
-        while self.original_queue.qsize() > 0: # TODO close window when video is over
-            # read frames from queue
+        while self.original_queue.qsize() > 0:
+            # read altered frame from queue
             frame = self.output_queue.get()
+            # read original frame from queue
             oframe = self.original_queue.get()
-            disp = np.concatenate((oframe,frame),axis=1)
-            out.write(disp)
+            # concatenate them together with the original frame on the left and
+            # altered frame on the right
+            disp = np.concatenate((oframe, frame), axis=1)
             cv2.imshow('frame', disp)
             cv2.waitKey(waitFor)
-        out.release()
         cv2.destroyAllWindows()
+
 
 def detect_flashes(frames):
     resolution = 5
@@ -115,7 +112,8 @@ def detect_flashes(frames):
     window_w = int(frames.shape[1] / resolution)
 
     # luminance change from one frame to the next
-    lumen_changes = np.zeros((resolution, resolution, num_frames - 1), dtype=np.int32)
+    lumen_changes = np.zeros(
+        (resolution, resolution, num_frames - 1), dtype=np.int32)
 
     # fill array of luminance changes
     for idx in range(num_frames - 1):
@@ -125,12 +123,12 @@ def detect_flashes(frames):
 
         for i in range(resolution):
             for j in range(resolution):
-                lumen_changes[i, j, idx] = np.sum(f_diff[window_h * i : window_h * (i + 1),
-                                                                window_w * j : window_w * (j + 1)])
+                lumen_changes[i, j, idx] = np.sum(f_diff[window_h * i: window_h * (i + 1),
+                                                         window_w * j: window_w * (j + 1)])
 
     abs_lumen_changes = np.abs(lumen_changes)
     # threshold for how much total lumenence variation constitutes a flash
-    threshold = 51 * num_frames * window_h * window_w # TODO dial in threshold
+    threshold = 51 * num_frames * window_h * window_w  # TODO dial in threshold
 
     # sum the amount that the brightness changes between all the
     # frames in this video segment -- if the brightness changes a lot,
@@ -154,15 +152,17 @@ original_queue = Queue()
 
 # create video reader
 video = cv2.VideoCapture("../source-footage/shock.mp4")
+
 if not video.isOpened():
     print("Error Opening Video File")
 waitFor = int(1000.0 / video.get(cv2.CAP_PROP_FPS))
-frame_w  = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_w = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_h = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 # create instances of each thread
 reading_thread = ReadingThread(input_queue, video, original_queue)
-processing_thread = ProcessingThread(input_queue, output_queue, frame_w, frame_h)
+processing_thread = ProcessingThread(
+    input_queue, output_queue, frame_w, frame_h)
 writing_thread = WritingThread(output_queue, original_queue)
 
 print('Video finished playing')
