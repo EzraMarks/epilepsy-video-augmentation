@@ -117,11 +117,10 @@ def blend_cut_contrast(frames):
 
 def average_brightness(frames):
     num_frames = frames.shape[3]
-    # not copying the frames modifies all of them idk why
+    # not copying the frames modifies all of them 
     frames_cpy = np.copy(frames)
 
-    # calculate sum total value of all frames (in hsv, value corresponds to brightness SUPPOSEDLY)
-    # in the real world this feels like a lie
+    # calculate sum total value of all frames
     value_sum = np.zeros((frames.shape[0], frames.shape[1]))
     for i in range(num_frames):
         # convert to HSV space to extract values
@@ -132,15 +131,15 @@ def average_brightness(frames):
 
     # average brightness across all images as a single value
     avg_value = np.sum(value_sum/num_frames)/(frames.shape[0]*frames.shape[1])
-    # try just making the brightness of every image the same (current attempt)
+    # try just making the brightness of every image the same
     brightness = np.full((frames.shape[0], frames.shape[1]), avg_value)
 
     for j in range(num_frames):
         # get each frame
         rgb_frame = frames[:, :, :, j]
-        # convert from RGB to HSV space to fuck with value (brightness???)
+        # convert from RGB to HSV space
         hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
-        # set brightness of every pixel to same value (starting to think this *isn't* brightness)
+        # set brightness of every pixel to same value 
         hsv_frame[:, :, 2] = brightness
 
         # convert frame back to RGB
@@ -150,19 +149,19 @@ def average_brightness(frames):
     return frames_cpy
 
 def threshold_brightness(frames):
-    # some random arbitrary threshold I set
+    # threshold value for pixels
     threshold = 50
     num_frames = frames.shape[3]
-    # not copying the frames modifies all of them idk why
+    # not copying the frames modifies all of them
     frames_cpy = np.copy(frames)
 
-    # average over entire images (could be use to normalize, ie subtract out)
+    # average over entire images
     rgb_sum = np.zeros((frames.shape[0], frames.shape[1], frames.shape[2]))
     for i in range(num_frames):
         rgb_sum += frames[:, :, :, i]
     rgb_avg = rgb_sum/num_frames
 
-    # just take the average of like every single pixel
+    # take the average of every single pixel
     sum_avg = np.sum(rgb_avg)
     total_avg = sum_avg/(frames.shape[0] * frames.shape[1])
 
@@ -171,8 +170,7 @@ def threshold_brightness(frames):
         # get each frame
         rgb_frame = frames[:, :, :, j]
 
-        # threshold based on average pixel value in order to make outliers less harsh (this didn't look *horrible*)
-        # (just very bad) -> also tried thresholding brightness and that was worse
+        # threshold based on average pixel value in order to make outliers less harsh
         rgb_frame_hthresh = rgb_frame > total_avg + threshold
         rgb_frame_lthresh = rgb_frame < total_avg - threshold
         rgb_frame[rgb_frame_hthresh] = rgb_frame[rgb_frame_hthresh] - threshold
@@ -184,11 +182,10 @@ def threshold_brightness(frames):
 
 def normalize_brightness(frames):
     num_frames = frames.shape[3]
-    # not copying the frames modifies all of them idk why
+    # not copying the frames modifies all of them 
     frames_cpy = np.copy(frames)
 
-    # calculate sum total value of all frames (in hsv, value corresponds to brightness SUPPOSEDLY)
-    # in the real world this feels like a lie
+    # calculate sum total value of all frames
     value_sum = np.zeros((frames.shape[0], frames.shape[1]))
     for i in range(num_frames):
         # convert to HSV space to extract values
@@ -197,12 +194,15 @@ def normalize_brightness(frames):
         # add value to running sum (avg later)
         value_sum += value
 
+    # compute average value
+    value_sum = value_sum/num_frames
+
     for j in range(num_frames):
         # get each frame
         rgb_frame = frames[:, :, :, j]
         # convert from RGB to HSV space to fuck with value (brightness???)
         hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
-        # set brightness of every pixel to same value (starting to think this *isn't* brightness)
+        # subtract average brightness 
         hsv_frame[:, :, 2] = hsv_frame[:, :, 2] - value_sum
 
         # convert frame back to RGB
@@ -213,10 +213,10 @@ def normalize_brightness(frames):
 
 def normalize_pixels(frames):
     num_frames = frames.shape[3]
-    # not copying the frames modifies all of them idk why
+    # not copying the frames modifies all of them
     frames_cpy = np.copy(frames)
 
-    # average over entire images (could be use to normalize, ie subtract out)
+    # average over entire images (used to normalize, ie subtract out)
     rgb_sum = np.zeros((frames.shape[0], frames.shape[1], frames.shape[2]))
     for i in range(num_frames):
         rgb_sum += frames[:, :, :, i]
@@ -224,7 +224,7 @@ def normalize_pixels(frames):
 
 
     for j in range(num_frames):
-        # get each frame
+        # get each frame and subtract average
         rgb_frame = frames[:, :, :, j] - rgb_avg
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
@@ -232,31 +232,30 @@ def normalize_pixels(frames):
 
 def average_lab(frames):
     num_frames = frames.shape[3]
-    # not copying the frames modifies all of them idk why
+    # not copying the frames modifies all of them
     frames_cpy = np.copy(frames)
 
-    # calculate sum total value of all frames (in hsv, value corresponds to brightness SUPPOSEDLY)
-    # in the real world this feels like a lie
+    # calculate sum total luminance of all frames
     lab_sum = np.zeros((frames.shape[0], frames.shape[1]))
     for i in range(num_frames):
-        # display each original frame (without modification) for ease
         # convert to LAB space to extract luminance
         lab_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2LAB)
         lab = lab_frame[:, :, 0]
         # add value to running sum (avg later)
         lab_sum += lab
 
-        # average brightness across all images as a single value
+    # average brightness across all images as a single value
     avg_lab = np.sum(lab_sum/num_frames)/(frames.shape[0]*frames.shape[1])
-    # try just making the brightness of every image the same (current attempt)
+
+    # try just making the brightness of every image the same
     brightness = np.full((frames.shape[0], frames.shape[1]), avg_lab)
 
     for j in range(num_frames):
         # get each frame
         rgb_frame = frames[:, :, :, j]
-        # convert from RGB to HSV space to fuck with value (brightness???)
+        # convert from RGB to LAB space
         lab_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
-        # set brightness of every pixel to same value (starting to think this *isn't* brightness)
+        # set brightness of every pixel to same luminance
         lab_frame[:, :, 0] = brightness
 
         # convert frame back to RGB
@@ -267,11 +266,10 @@ def average_lab(frames):
 
 def replace_value(frames):
     num_frames = frames.shape[3]
-    # not copying the frames modifies all of them idk why
+    # not copying the frames modifies all of them
     frames_cpy = np.copy(frames)
 
-    # calculate sum total value of all frames (in hsv, value corresponds to brightness SUPPOSEDLY)
-    # in the real world this feels like a lie
+    # calculate sum total value of all frames
     value_sum = np.zeros((frames.shape[0], frames.shape[1]))
     for i in range(num_frames):
         # convert to HSV space to extract values
@@ -286,25 +284,23 @@ def replace_value(frames):
     for j in range(num_frames):
         # get each frame
         rgb_frame = frames[:, :, :, j]
-        # convert from RGB to HSV space to fuck with value (brightness???)
+        # convert from RGB to HSV space 
         hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
-        # set brightness of every pixel to same value (starting to think this *isn't* brightness)
+        # set brightness of every pixel to same value
         hsv_frame[:, :, 2] = avg_value
 
         # convert frame back to RGB
         rgb_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2RGB)
-        # display frame so as to better see my pain
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy
 
 def replace_luminance(frames):
     num_frames = frames.shape[3]
-    # not copying the frames modifies all of them idk why
+    # not copying the frames modifies all of them
     frames_cpy = np.copy(frames)
 
-    # calculate sum total value of all frames (in hsv, value corresponds to brightness SUPPOSEDLY)
-    # in the real world this feels like a lie
+    # calculate sum total value of all frames 
     value_sum = np.zeros((frames.shape[0], frames.shape[1]))
     for i in range(num_frames):
         # convert to HSV space to extract values
@@ -319,9 +315,9 @@ def replace_luminance(frames):
     for j in range(num_frames):
         # get each frame
         rgb_frame = frames[:, :, :, j]
-        # convert from RGB to HSV space to fuck with value (brightness???)
+        # convert from RGB to HSV space
         hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2LAB)
-        # set brightness of every pixel to same value (starting to think this *isn't* brightness)
+        # set brightness of every pixel to same value
         hsv_frame[:, :, 2] = avg_value
 
         # convert frame back to RGB
