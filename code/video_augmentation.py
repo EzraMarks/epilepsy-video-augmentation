@@ -35,7 +35,8 @@ def blend(frames):
     beta = inc
     alpha = (1.0 - beta)
     for i in range(1, num_frames - 1):
-        frames[:, :, :, i] = cv2.addWeighted(frames[:, :, :, 0], alpha, frames[:, :, :, num_frames - 1], beta, 0.0)
+        frames[:, :, :, i] = cv2.addWeighted(
+            frames[:, :, :, 0], alpha, frames[:, :, :, num_frames - 1], beta, 0.0)
         beta = beta + inc
         alpha = 1.0 - beta
     return frames
@@ -73,9 +74,12 @@ def blazy_boi(frames):
 def contrast_drop(frames):
     num_frames = frames.shape[3]
     for i in range(0, num_frames):
-        frames[:,:,:,i] = cv2.convertScaleAbs(frames[:,:,:,i], alpha=0.2, beta=100.0)
+        frames[:, :, :, i] = cv2.convertScaleAbs(
+            frames[:, :, :, i], alpha=0.2, beta=100.0)
     return frames
 
+def black_out(frames):
+    return np.zeros((frame_h, frame_w, 3, frames.shape[3]), dtype=np.uint8)
 
 def normalize_luminance(frames):
     num_frames = frames.shape[3]
@@ -88,6 +92,28 @@ def normalize_luminance(frames):
         img = cv2.cvtColor(img, cv2.COLOR_YUV2RGB);
     return frames
 
+def blazy_contrast(frames):
+    num_frames = frames.shape[3]
+    over_two = int(num_frames / 2)
+    begin = frames[:, :, :, 0]
+    middle = cv2.convertScaleAbs(
+        frames[:, :, :, over_two - 1], alpha=0.2, beta=100.0)
+    end = frames[:, :, :, num_frames - 1]
+    inc = 1 / num_frames
+    alpha = (over_two - 1) * inc
+    beta = 1.0 - alpha
+    for i in range(1, over_two - 1):
+        frames[:, :, :, i] = cv2.addWeighted(begin, alpha, middle, beta, 0.0)
+        alpha = alpha - inc
+        beta = 1.0 - alpha
+    alpha = (num_frames + 1 - over_two) * inc
+    beta = 1.0 - alpha
+    for i in range(over_two, num_frames):
+        frames[:, :, :, i] = cv2.addWeighted(middle, alpha, end, beta, 0.0)
+        alpha = alpha - inc
+        beta = 1.0 - alpha
+    frames[:, :, :, over_two - 1] = middle
+    return frames
 
 def average_brightness(frames):
     num_frames = frames.shape[3]
@@ -102,7 +128,7 @@ def average_brightness(frames):
         hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
         value = hsv_frame[:, :, 2]
         # add value to running sum (avg later)
-        value_sum += value  
+        value_sum += value
 
     # average brightness across all images as a single value
     avg_value = np.sum(value_sum/num_frames)/(frames.shape[0]*frames.shape[1])
@@ -127,7 +153,7 @@ def average_brightness(frames):
     return frames_cpy
 
 def threshold_brightness(frames):
-    # some random arbitrary threshold I set 
+    # some random arbitrary threshold I set
     threshold = 50
     num_frames = frames.shape[3]
     # not copying the frames modifies all of them idk why
@@ -153,7 +179,7 @@ def threshold_brightness(frames):
         rgb_frame_hthresh = rgb_frame > total_avg + threshold
         rgb_frame_lthresh = rgb_frame < total_avg - threshold
         rgb_frame[rgb_frame_hthresh] = rgb_frame[rgb_frame_hthresh] - threshold
-        rgb_frame[rgb_frame_lthresh] = rgb_frame[rgb_frame_lthresh] + threshold 
+        rgb_frame[rgb_frame_lthresh] = rgb_frame[rgb_frame_lthresh] + threshold
 
         # display frame so as to better see my pain
         cv2.imshow('new_frame', rgb_frame)
@@ -175,7 +201,7 @@ def normalize_brightness(frames):
         hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
         value = hsv_frame[:, :, 2]
         # add value to running sum (avg later)
-        value_sum += value  
+        value_sum += value
 
     for j in range(num_frames):
         # get each frame
@@ -193,7 +219,7 @@ def normalize_brightness(frames):
         # modify frame in copied array
         frames_cpy[:, :, :, j] = rgb_frame
     return frames_cpy
-    
+
 def normalize_pixels(frames):
     num_frames = frames.shape[3]
     # not copying the frames modifies all of them idk why
@@ -230,8 +256,8 @@ def average_lab(frames):
         lab_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2LAB)
         lab = lab_frame[:, :, 0]
         # add value to running sum (avg later)
-        lab_sum += lab  
-    
+        lab_sum += lab
+
         # average brightness across all images as a single value
     avg_lab = np.sum(lab_sum/num_frames)/(frames.shape[0]*frames.shape[1])
     # try just making the brightness of every image the same (current attempt)
@@ -267,7 +293,7 @@ def replace_value(frames):
         hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2HSV)
         value = hsv_frame[:, :, 2]
         # add value to running sum (avg later)
-        value_sum += value  
+        value_sum += value
 
     # average brightness across all images as a single value
     avg_value = np.sum(value_sum/num_frames)/(frames.shape[0]*frames.shape[1])
@@ -302,7 +328,7 @@ def replace_luminance(frames):
         hsv_frame = cv2.cvtColor(frames[:, :, :, i], cv2.COLOR_RGB2LAB)
         value = hsv_frame[:, :, 2]
         # add value to running sum (avg later)
-        value_sum += value  
+        value_sum += value
 
     # average brightness across all images as a single value
     avg_value = np.sum(value_sum/num_frames)/(frames.shape[0]*frames.shape[1])
