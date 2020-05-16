@@ -1,10 +1,10 @@
 # Video Augmentation for Photosensitive Epilepsy 
 
-Photosensitivity, formally known as photosensitive epilepsy, is a condition that results in sensitivity to certain visual patterns, particularly flashing lights. When exposed to these visual stimuli, a person with photosensitivity can experience seizures or seizure-like symptoms. The Epilepsy Foundation has identified key triggers for light-induced seizures, including: the frequency of the flickering light; the intensity and contrast between the light and dark images that compose the flash; the total visual area occupied by the light stimulus; and the pattern of the image, particularly light and dark stripes.<sup>1</sup>
+Photosensitivity, formally known as photosensitive epilepsy, is a condition that results in sensitivity to certain visual patterns, particularly flashing lights. When exposed to these visual stimuli, a person with photosensitivity can experience seizures or seizure-like symptoms. The Epilepsy Foundation has identified key triggers for light-induced seizures, including, but not limited to, the frequency and intensity of flashing light.<sup>1</sup>
 
 This program detects patterns of flashing light in video and outputs an augmented video with the photosensitive-triggering light patterns removed, achieved in near real-time. Although video producers are the first line of defense in removing content that could trigger photosensitivity, online video platforms like YouTube currently lack the necesary regulation. This software is meant directly for the end-user, giving agency and peace of mind for video viewers with photosensitivity.
 
-Although this program has shown promising results on augmenting dangerous flashing videos like the “Pokémon Shock”<sup>2</sup> episode, the project is far from thoroughly tested. Please use at your own risk.
+Although this program has shown promising results on augmenting dangerous flashing videos like the “Pokémon Shock” episode,<sup>2</sup> the photosensitivity-trigger reduction is not all-encompasing nor is it thoroughly tested. Please use at your own risk.
 
 <sub>1 &nbsp; Epilepsy Foundation. “Shedding Light on Photosensitivity, One of Epilepsy's Most Complex Conditions.” Epilepsy Foundation, www.epilepsy.com/article/2014/3/shedding-light-photosensitivity-one-epilepsys-most-complex-conditions-0.</sup>
 
