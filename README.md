@@ -11,12 +11,12 @@ Although this program has shown promising results on augmenting dangerous flashi
 <sub> 2 &nbsp; When the 1997 episode of Pokémon (termed “Pokémon Shock”) debued, 685 children in Japan were hospitalized due to one scene with flashing red and blue lights. For more information, see “The Pokémon Panic of 1997” by Skeptical Inquirer (May 2001), https://web.archive.org/web/20020125093204/http://www.csicop.org/si/2001-05/pokemon.html.</sub>
 
 ## Usage:
-To view a video with photosensitive triggers reduced in real-time, run main.py, passing in the video file as a command line argument:
+To view a video with photosensitivity triggers reduced in real-time, run main.py, passing in the video file as a command line argument:
 ```
 python3 main.py my_video.mp4
 ```
 
-If using an OS that does not support multithreading, use the `--preprocess` flag. This will preprocess the video, rather than using multithreading for real-time video processing and viewing:
+If using an OS that does not support multithreaded video viewing, use the `--preprocess` flag. This will preprocess the video, rather than using multithreading for real-time video processing and viewing:
 ```
 python3 main.py my_video.mp4 --preprocess
 ```
