@@ -4,7 +4,7 @@ Photosensitivity, formally known as photosensitive epilepsy, is a condition that
 
 This program detects patterns of flashing light in video and outputs an augmented video with the photosensitive-triggering light patterns removed, achieved in near real-time. Although video producers are the first line of defense in removing content that could trigger photosensitivity, online video platforms like YouTube currently lack the necesary regulation. This software is meant directly for the end-user, giving agency and peace of mind for video viewers with photosensitivity.
 
-Although this program has shown promising results on augmenting dangerous flashing videos like the “Pokémon Shock” episode,<sup>2</sup> the photosensitivity-trigger reduction is not all-encompasing nor is it thoroughly tested. Please use at your own risk.
+Although this program has shown promising results on augmenting dangerous flashing videos like the “Pokémon Shock” episode,<sup>2</sup> the photosensitivity-trigger reduction is not all-encompassing nor is it thoroughly tested. Please use at your own risk.
 
 <sub>1 &nbsp; Epilepsy Foundation. “Shedding Light on Photosensitivity, One of Epilepsy's Most Complex Conditions.” Epilepsy Foundation, www.epilepsy.com/article/2014/3/shedding-light-photosensitivity-one-epilepsys-most-complex-conditions-0.</sup>
 
