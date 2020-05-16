@@ -39,13 +39,12 @@ class ProcessingThread(Thread):
 
         while ((self.video.isOpened()) or (self.input_queue.qsize() >= num_frames)):
             if (self.input_queue.qsize() >= num_frames):
-                # loading frames into array for processing:
+                # load frames into array for processing
                 for i in range(num_frames - overlap):
-                    # pop these frames off of the input queue,
-                    # since we will no longer need them
+                    # pop used frames off of the input queue
                     frames[:, :, :, i] = self.input_queue.get()
                 for i in range(overlap):
-                    # keep these frames in the input queue for reuse (overlap)
+                    # peek at overlapping frames in input queue, reusing them
                     # when processing the next segment of the video
                     frames[:, :, :, num_frames - overlap + i] = self.input_queue.queue[i]
                 
@@ -67,10 +66,10 @@ class WritingThread(Thread):
     def run(self):
         fps = self.video.get(cv2.CAP_PROP_FPS)
         while ((self.video.isOpened()) or (self.output_queue.qsize() > 0)):
-            # buffer, if running too slowly
+            # pause to buffer, if running too slowly
             if (self.output_queue.qsize() == 0):
                 cv2.waitKey(2000)
-            # read frames from queue
+            # display frames from output queue
             frame = self.output_queue.get()
             cv2.imshow('frame', frame)
             cv2.waitKey(int(1000 / fps))

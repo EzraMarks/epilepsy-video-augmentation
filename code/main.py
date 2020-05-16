@@ -31,7 +31,7 @@ def parse_args():
 def main():
     # FIFO (first-in-first-out) queue to hold frames after reading them in
     input_queue = Queue()
-    # FIFO queue to hold frames after processing, before writing/displaying them out
+    # FIFO queue to hold frames after processing, before displaying them out
     output_queue = Queue()
 
     # create video reader

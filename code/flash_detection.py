@@ -26,7 +26,7 @@ def detect_flashes(frames):
     threshold = 51 * num_frames * window_h * window_w
 
     # sum the amount that the brightness changes between all the
-    # frames in this video segment -- if the brightness changes a lot,
+    # frames in this video segment -- if the total brightness change is large,
     # there are likely flashes during this segment
     total_lumen_changes = np.sum(abs_lumen_changes, axis=2, dtype=np.int32)
 
