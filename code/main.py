@@ -62,6 +62,7 @@ def main():
     reading_thread.join()
     processing_thread.join()
     writing_thread.join()
+    print("Finished Processing Video")
 
 ARGS = parse_args()
 

@@ -19,10 +19,13 @@ class ReadingThread(Thread):
     def run(self):
         isReading = self.video.isOpened()
         while (isReading):
-            # loads frames into queue
-            isReading, frame = self.video.read()
-            if (isReading):
-                self.input_queue.put(frame)
+            if (self.input_queue.qsize() < 480):
+                # loads frames into queue
+                isReading, frame = self.video.read()
+                if (isReading):
+                    self.input_queue.put(frame)
+            else:
+                cv2.waitKey(1000)
 
         self.video.release()
 
@@ -76,7 +79,7 @@ class WritingThread(Thread):
     
     def run(self):
         fps = self.video.get(cv2.CAP_PROP_FPS)
-        while self.video.isOpened() or (self.output_queue.qsize() > 0) or (self.input_queue.qsize() > 0):
+        while self.video.isOpened() or (self.input_queue.qsize() > 10) or (self.output_queue.qsize() > 0):
             # pauses to buffer, if running too slowly
             if (self.output_queue.qsize() == 0):
                 cv2.waitKey(2000)
