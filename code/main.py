@@ -28,12 +28,12 @@ def parse_args():
     return parser.parse_args()
 
 def main():
-    # queue to hold frames after reading them in
+    # holds frames after reading them in
     input_queue = Queue()
-    # queue to hold frames after processing, before displaying them out
+    # hold frames after processing, before displaying them out
     output_queue = Queue()
 
-    # creates video reader
+    # reader for the video input
     video = cv2.VideoCapture(ARGS.video)
     if not video.isOpened():
         print("Error Opening Video File")
@@ -44,16 +44,16 @@ def main():
 
     augmentation_func = getattr(augment, ARGS.augmentation)
 
-    # creates video writer, only if --realtime is not enabled
+    # video writer, for creating the output video file
     video_writer = None
     if not ARGS.realtime: video_writer = cv2.VideoWriter('../results/output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
    
     # creates instances of each thread
     reading_thread = processing.ReadingThread(input_queue, video)
     processing_thread = processing.ProcessingThread(input_queue, output_queue, video, augmentation_func)
-    writing_thread = processing.WritingThread(output_queue, video, video_writer)
+    writing_thread = processing.WritingThread(input_queue, output_queue, video, video_writer)
 
-    # start running all threads
+    # starts running all threads
     reading_thread.start()
     processing_thread.start()
     writing_thread.start()
@@ -62,9 +62,7 @@ def main():
     reading_thread.join()
     processing_thread.join()
     writing_thread.join()
-    print('Video finished playing')
 
-# makes arguments gloabl
 ARGS = parse_args()
 
 main()

@@ -6,8 +6,8 @@ from skimage.color import rgb2hsv
 # "absolute most lazy implementation"
 # • This function replaces the first half of the frames with the first frame
 # and the second half of the frames with the last frame.
-# • It works pretty well on hand animation like pokemon shock, but it looks
-# super jank on the seven nation army video since it
+# • It works pretty well on low frame-rate animation like pokemon shock, but it looks
+# super choppy on high frame-rate video.
 def hard_cut(frames):
     num_frames = frames.shape[3]
     over_two = int(num_frames / 2)
@@ -69,7 +69,7 @@ def blend_and_cut(frames):
 
 # "trying legit methods"
 # • drops the contrast of the video and bumps brightness to offset
-# • definitely gets rid of a lot of flashing I think but it looks very obviously
+# • definitely gets rid of a lot of flashing, but it looks very obviously
 # altered, as it just gets really grey
 def contrast_drop(frames):
     num_frames = frames.shape[3]

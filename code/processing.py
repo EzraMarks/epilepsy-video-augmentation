@@ -51,8 +51,8 @@ class ProcessingThread(Thread):
                     # pops used frames off of the input queue
                     frames[:, :, :, i] = self.input_queue.get()
                 for i in range(overlap):
-                    # peeks at overlapping frames in input queue, reusing them
-                    # when processing the next segment of the video
+                    # peeks at overlapping frames in input queue, not removing them so
+                    # that they can be reused when processing the next segment of the video
                     frames[:, :, :, num_frames - overlap + i] = self.input_queue.queue[i]
                 
                 flash = detect_flashes(frames)
@@ -66,18 +66,19 @@ class ProcessingThread(Thread):
         progressBar.finish()
 
 class WritingThread(Thread):
-    def __init__(self, output_queue, video, video_writer = None):
+    def __init__(self, input_queue, output_queue, video, video_writer = None):
         Thread.__init__(self)
         self.name = "Writing Thread"
+        self.input_queue = input_queue
         self.output_queue = output_queue
         self.video = video
         self.video_writer = video_writer
     
     def run(self):
-        # live output
+        # realtime processing with live video output
         if (self.video_writer == None):
             fps = self.video.get(cv2.CAP_PROP_FPS)
-            while ((self.video.isOpened()) or (self.output_queue.qsize() > 0)):
+            while self.video.isOpened() or (self.output_queue.qsize() > 0) or (self.input_queue.qsize() > 0):
                 # pauses to buffer, if running too slowly
                 if (self.output_queue.qsize() == 0):
                     cv2.waitKey(2000)
@@ -89,10 +90,9 @@ class WritingThread(Thread):
             cv2.destroyAllWindows()
         # output to file
         else:
-            while self.output_queue.qsize() > 0:
-                # reads frames from queue and writes them to file
+            while self.video.isOpened() or (self.output_queue.qsize() > 0) or (self.input_queue.qsize() > 0):
                 frame = self.output_queue.get()
+                # writes frame to file
                 self.video_writer.write(frame)
 
             self.video_writer.release()
-            cv2.destroyAllWindows()
