@@ -75,24 +75,23 @@ class WritingThread(Thread):
         self.video_writer = video_writer
     
     def run(self):
-        # realtime processing with live video output
-        if (self.video_writer == None):
-            fps = self.video.get(cv2.CAP_PROP_FPS)
-            while self.video.isOpened() or (self.output_queue.qsize() > 0) or (self.input_queue.qsize() > 0):
-                # pauses to buffer, if running too slowly
-                if (self.output_queue.qsize() == 0):
-                    cv2.waitKey(2000)
-                # displays frames from output queue
-                frame = self.output_queue.get()
+        fps = self.video.get(cv2.CAP_PROP_FPS)
+        while self.video.isOpened() or (self.output_queue.qsize() > 0) or (self.input_queue.qsize() > 0):
+            # pauses to buffer, if running too slowly
+            if (self.output_queue.qsize() == 0):
+                cv2.waitKey(2000)
+                continue
+            
+            frame = self.output_queue.get()
+
+            # live video playback
+            if (self.video_writer == None):
                 cv2.imshow('frame', frame)
                 cv2.waitKey(int(1000 / fps))
-            
-            cv2.destroyAllWindows()
-        # output to file
-        else:
-            while self.video.isOpened() or (self.output_queue.qsize() > 0) or (self.input_queue.qsize() > 0):
-                frame = self.output_queue.get()
-                # writes frame to file
+            # writing video to file
+            else:
                 self.video_writer.write(frame)
-
-            self.video_writer.release()
+        
+        # closes video writing / video playback
+        if (self.video_writer != None): self.video_writer.release()
+        cv2.destroyAllWindows()
