@@ -10,7 +10,7 @@ def detect_flashes(frames):
     # luminance change from one frame to the next
     lumen_changes = np.zeros((resolution, resolution, num_frames - 1), dtype=np.int32)
 
-    # fill array of luminance changes
+    # fills array of luminance changes
     for idx in range(num_frames - 1):
         f_curr = frames[:, :, :, idx].astype(np.int16)
         f_next = frames[:, :, :, idx + 1].astype(np.int16)
@@ -25,14 +25,14 @@ def detect_flashes(frames):
     # threshold for how much total lumenence variation constitutes a flash
     threshold = 51 * num_frames * window_h * window_w
 
-    # sum the amount that the brightness changes between all the
+    # sums the amount that the brightness changes between all the
     # frames in this video segment -- if the total brightness change is large,
     # there are likely flashes during this segment
     total_lumen_changes = np.sum(abs_lumen_changes, axis=2, dtype=np.int32)
 
     regional_flashes = total_lumen_changes > threshold
 
-    # collapse regional flashes into single flash detection boolean
+    # collapses regional flashes into single flash detection boolean
     flash = np.sum(regional_flashes) != 0
 
     return flash

@@ -2,8 +2,12 @@ import cv2
 import numpy as np
 from queue import Queue
 from threading import Thread
+from progress.bar import IncrementalBar
 
 from flash_detection import detect_flashes
+
+class ProgressBar(IncrementalBar):
+    suffix = "%(percent)d%% [%(elapsed_td)s / %(eta_td)s]"
 
 class ReadingThread(Thread):
     def __init__(self, input_queue, video):
@@ -13,13 +17,14 @@ class ReadingThread(Thread):
         self.video = video
     
     def run(self):
-        while (self.video.isOpened()):
-            # load frames into queue
-            ret, frame = self.video.read()
-            if (ret):
+        isReading = self.video.isOpened()
+        while (isReading):
+            # loads frames into queue
+            isReading, frame = self.video.read()
+            if (isReading):
                 self.input_queue.put(frame)
-            else:
-                self.video.release()
+
+        self.video.release()
 
 class ProcessingThread(Thread):
     def __init__(self, input_queue, output_queue, video, augmentation_func):
@@ -31,6 +36,7 @@ class ProcessingThread(Thread):
         self.augmentation_func = augmentation_func
     
     def run(self):
+        progressBar = ProgressBar("Processing", max=self.video.get(cv2.CAP_PROP_FRAME_COUNT))
         frame_w  = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH))
         frame_h = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         num_frames = 10
@@ -39,12 +45,13 @@ class ProcessingThread(Thread):
 
         while ((self.video.isOpened()) or (self.input_queue.qsize() >= num_frames)):
             if (self.input_queue.qsize() >= num_frames):
-                # load frames into array for processing
+                # loads frames into array for processing
                 for i in range(num_frames - overlap):
-                    # pop used frames off of the input queue
+                    progressBar.next()
+                    # pops used frames off of the input queue
                     frames[:, :, :, i] = self.input_queue.get()
                 for i in range(overlap):
-                    # peek at overlapping frames in input queue, reusing them
+                    # peeks at overlapping frames in input queue, reusing them
                     # when processing the next segment of the video
                     frames[:, :, :, num_frames - overlap + i] = self.input_queue.queue[i]
                 
@@ -56,22 +63,36 @@ class ProcessingThread(Thread):
                     frame = np.copy(frames[:, :, :, i])
                     self.output_queue.put(frame)
 
+        progressBar.finish()
+
 class WritingThread(Thread):
-    def __init__(self, output_queue, video):
+    def __init__(self, output_queue, video, video_writer = None):
         Thread.__init__(self)
         self.name = "Writing Thread"
         self.output_queue = output_queue
         self.video = video
+        self.video_writer = video_writer
     
     def run(self):
-        fps = self.video.get(cv2.CAP_PROP_FPS)
-        while ((self.video.isOpened()) or (self.output_queue.qsize() > 0)):
-            # pause to buffer, if running too slowly
-            if (self.output_queue.qsize() == 0):
-                cv2.waitKey(2000)
-            # display frames from output queue
-            frame = self.output_queue.get()
-            cv2.imshow('frame', frame)
-            cv2.waitKey(int(1000 / fps))
-        
-        cv2.destroyAllWindows()
+        # live output
+        if (self.video_writer == None):
+            fps = self.video.get(cv2.CAP_PROP_FPS)
+            while ((self.video.isOpened()) or (self.output_queue.qsize() > 0)):
+                # pauses to buffer, if running too slowly
+                if (self.output_queue.qsize() == 0):
+                    cv2.waitKey(2000)
+                # displays frames from output queue
+                frame = self.output_queue.get()
+                cv2.imshow('frame', frame)
+                cv2.waitKey(int(1000 / fps))
+            
+            cv2.destroyAllWindows()
+        # output to file
+        else:
+            while self.output_queue.qsize() > 0:
+                # reads frames from queue and writes them to file
+                frame = self.output_queue.get()
+                self.video_writer.write(frame)
+
+            self.video_writer.release()
+            cv2.destroyAllWindows()

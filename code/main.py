@@ -3,11 +3,10 @@ import argparse
 import cv2
 from queue import Queue
 from threading import Thread
-import realtime_processing as realtime
-import non_realtime_processing as non_realtime
+import processing
 import video_augmentation as augment
 
-# perform command-line argument parsing
+# performs command-line argument parsing
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -23,42 +22,41 @@ def parse_args():
         'average_lab', 'replace_value', 'replace_luminance'],
         help='''Which type of video augmentation to use for flash reduction.''')
     parser.add_argument(
-        '--preprocess',
+        '--realtime',
         action='store_true',
-        help='''Flag for using non-real-time processing.''')
+        help='''Flag for using realtime processing.''')
     return parser.parse_args()
 
 def main():
-    # FIFO (first-in-first-out) queue to hold frames after reading them in
+    # queue to hold frames after reading them in
     input_queue = Queue()
-    # FIFO queue to hold frames after processing, before displaying them out
+    # queue to hold frames after processing, before displaying them out
     output_queue = Queue()
 
-    # create video reader
+    # creates video reader
     video = cv2.VideoCapture(ARGS.video)
     if not video.isOpened():
         print("Error Opening Video File")
+
     fps = video.get(cv2.CAP_PROP_FPS)
+    frame_width = int(video.get(3))
+    frame_height = int(video.get(4))
 
     augmentation_func = getattr(augment, ARGS.augmentation)
 
-    if (ARGS.preprocess):
-        # create queue to store unaltered video for side-by-side comparison
-        original_queue = Queue()
-        # create instances of each thread
-        reading_thread = non_realtime.ReadingThread(input_queue, original_queue, video)
-        processing_thread = non_realtime.ProcessingThread(input_queue, output_queue, video, augmentation_func)
-        writing_thread = non_realtime.WritingThread(output_queue, original_queue, fps)
-    else:
-        # create instances of each thread
-        reading_thread = realtime.ReadingThread(input_queue, video)
-        processing_thread = realtime.ProcessingThread(input_queue, output_queue, video, augmentation_func)
-        writing_thread = realtime.WritingThread(output_queue, video)
+    # creates video writer, only if --realtime is not enabled
+    video_writer = None
+    if not ARGS.realtime: video_writer = cv2.VideoWriter('../results/output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
+   
+    # creates instances of each thread
+    reading_thread = processing.ReadingThread(input_queue, video)
+    processing_thread = processing.ProcessingThread(input_queue, output_queue, video, augmentation_func)
+    writing_thread = processing.WritingThread(output_queue, video, video_writer)
 
-        # start running all threads
-        reading_thread.start()
-        processing_thread.start()
-        writing_thread.start()
+    # start running all threads
+    reading_thread.start()
+    processing_thread.start()
+    writing_thread.start()
     
     # after all threads are finished
     reading_thread.join()
@@ -66,7 +64,7 @@ def main():
     writing_thread.join()
     print('Video finished playing')
 
-# make arguments gloabl
+# makes arguments gloabl
 ARGS = parse_args()
 
 main()
